@@ -9,24 +9,24 @@ const EDIEChamberPotencyGraph = () => {
   const decay_factor_new = Math.pow(0.5, 1 / half_life_new);
 
   const daily_volumes = {
-    '95_14': 5.0,
-    '75_14': 3.0,
-    '50_14': 1.0,
-    '25_14': 0.5,
-    '0_1': 0.1,
+    '95_14': 6.9,
+    '75_14': 1.65,
+    '50_14': .6,
+    '25_14': 0.2,
+    '10_1': 0.1,
   };
 
   const ozPerDayToGph = (ozPerDay) => {
     const gallonsPerDay = ozPerDay / 128;
-    return (gallonsPerDay / 16).toFixed(4);
+    return (gallonsPerDay / 16).toFixed(5);
   };
 
   const simulatePotency = (daily_volume, days, start_potency = 100) => {
     let potency = start_potency;
     const potency_values = [potency];
     for (let i = 0; i < days * 2; i++) { // Generate data points for every 12 hours
-      potency *= Math.pow(decay_factor_new, 0.5);
-      potency = potency * (1 - (daily_volume / 2) / V_chamber) + ((daily_volume / 2) * 100) / V_chamber;
+      potency *= Math.pow(decay_factor_new, 0.4);
+      potency = potency * (.999 - (daily_volume / 2) / V_chamber) + ((daily_volume / 2) * 100) / V_chamber;
       potency_values.push(potency);
     }
     return potency_values;
@@ -58,8 +58,8 @@ const EDIEChamberPotencyGraph = () => {
     'potency_50_14_0': true,
     'potency_25_14_100': true,
     'potency_25_14_0': true,
-    'potency_0_1_100': true,
-    'potency_0_1_0': true,
+    'potency_10_1_100': true,
+    'potency_10_1_0': true,
     'potency_0_corrected': true,
   });
 
@@ -179,11 +179,11 @@ const EDIEChamberPotencyGraph = () => {
     <div style={{ fontSize: '12px', marginTop: '20px', textAlign: 'left', padding: '0 20px' }}>
       <h3 style={{ fontSize: '14px', fontWeight: 'bold' }}>Notes:</h3>
       <ol>
-		<li>100% potency assumes a full chamber of active Product. 0% potency assumes full chamber of inert liquid.</li>
-		<li>Chamber will never reach 100% due to logarithimic nature of displacement and the introduction of acid into the chamber.</li>
+        <li>100% potency assumes a full chamber of active Product. 0% potency assumes full chamber of inert liquid.</li>
+        <li>Chamber will never reach 100% due to logarithmic nature of displacement and the introduction of acid into the chamber.</li>
         <li>Once potency reaches desired value from 0%, injection changes to standard rate.</li>
         <li>This assumes a perfect world scenario in which the chamber is potent exactly 100% at day 0 and 0% at day 7.</li>
-		<li>The GPH values are average values you should see on Product Pump, assuming it operates 16 hours per day.</li>
+        <li>The GPH values are average values you should see on Product Pump, assuming it operates 16 hours per day.</li>
         <li>The formula used for calculating potency changes combines daily compounded degradation and volume displacement:
           <ul>
             <li>Volume displacement: P_new = P_old * (1 - V_in/V_total) + (V_in * 100%) / V_total</li>
@@ -277,3 +277,4 @@ const EDIEChamberPotencyGraph = () => {
 };
 
 export default EDIEChamberPotencyGraph;
+
