@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Slider, Checkbox, FormControlLabel, FormGroup } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 const EDIEChamberPotencyGraph = () => {
   const V_chamber = 8.0;
@@ -23,9 +24,9 @@ const EDIEChamberPotencyGraph = () => {
   const simulatePotency = (daily_volume, days, start_potency = 100) => {
     let potency = start_potency;
     const potency_values = [potency];
-    for (let day = 0; day < days; day++) {
-      potency *= decay_factor_new;
-      potency = potency * (1 - daily_volume / V_chamber) + (daily_volume * 100) / V_chamber;
+    for (let i = 0; i < days * 2; i++) { // Generate data points for every 12 hours
+      potency *= Math.pow(decay_factor_new, 0.5);
+      potency = potency * (1 - (daily_volume / 2) / V_chamber) + ((daily_volume / 2) * 100) / V_chamber;
       potency_values.push(potency);
     }
     return potency_values;
@@ -33,13 +34,15 @@ const EDIEChamberPotencyGraph = () => {
 
   const generateData = (days) => {
     const data = [];
-    for (let day = 0; day <= days; day++) {
-      const dataPoint = { day };
+    for (let i = 0; i <= days * 2; i++) { // Generate data points for every 12 hours
+      const day = Math.floor(i / 2);
+      const halfDay = (i % 2) * 12;
+      const dataPoint = { time: day + halfDay / 24 };
       Object.entries(daily_volumes).forEach(([key, volume]) => {
-        dataPoint[`potency_${key}_100`] = simulatePotency(volume, days)[day];
-        dataPoint[`potency_${key}_0`] = simulatePotency(volume, days, 0)[day];
+        dataPoint[`potency_${key}_100`] = simulatePotency(volume, days)[i];
+        dataPoint[`potency_${key}_0`] = simulatePotency(volume, days, 0)[i];
       });
-      dataPoint['potency_0_corrected'] = day <= 7 ? 100 - (100 / 7) * day : 0;
+      dataPoint['potency_0_corrected'] = i <= 14 ? 100 - (100 / 14) * i : 0;
       data.push(dataPoint);
     }
     return data;
@@ -59,7 +62,6 @@ const EDIEChamberPotencyGraph = () => {
     'potency_0_1_0': true,
     'potency_0_corrected': true,
   });
-  const [potencyRange, setPotencyRange] = useState([0, 100]);
 
   const data = generateData(days);
 
@@ -73,14 +75,18 @@ const EDIEChamberPotencyGraph = () => {
     setDays(newValue);
   };
 
-  const handlePotencyRangeChange = (event, newValue) => {
-    setPotencyRange(newValue);
-  };
-
   const CustomizedLegend = () => (
     <FormGroup row style={{ justifyContent: 'center', marginTop: '20px' }}>
       {Object.entries(daily_volumes).map(([key, volume], index) => (
-        <div key={key} style={{ margin: '0 10px 10px 10px', textAlign: 'left' }}>
+        <Box
+          key={key}
+          border={1}
+          borderColor="grey.400"
+          borderRadius={4}
+          padding={1}
+          margin={1}
+          style={{ textAlign: 'left' }}
+        >
           <FormControlLabel
             control={
               <Checkbox
@@ -91,6 +97,14 @@ const EDIEChamberPotencyGraph = () => {
             }
             label={`${key.split('_')[0]}% Potency (100%)`}
           />
+          <Box style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+            <svg width="20" height="10" style={{ marginRight: '5px' }}>
+              <line x1="0" y1="5" x2="20" y2="5" stroke={colors[index]} strokeWidth="2" />
+            </svg>
+            <Typography variant="body2">
+              100%, {volume.toFixed(1)} oz/day ({ozPerDayToGph(volume)} gph)
+            </Typography>
+          </Box>
           <FormControlLabel
             control={
               <Checkbox
@@ -101,26 +115,55 @@ const EDIEChamberPotencyGraph = () => {
             }
             label={`${key.split('_')[0]}% Potency (0%)`}
           />
-        </div>
+          <Box style={{ display: 'flex', alignItems: 'center' }}>
+            <svg width="20" height="10" style={{ marginRight: '5px' }}>
+              <line x1="0" y1="5" x2="20" y2="5" stroke={colors[index]} strokeWidth="2" strokeDasharray="5,5" />
+            </svg>
+            <Typography variant="body2">
+              0%, {(volume * 2).toFixed(1)} oz/day ({ozPerDayToGph(volume * 2)} gph)
+            </Typography>
+          </Box>
+        </Box>
       ))}
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={visibleLines['potency_0_corrected']}
-            onChange={() => handleVisibilityChange('potency_0_corrected')}
-            style={{ color: 'black' }}
-          />
-        }
-        label="0% Potency (No Injection)"
-      />
+      <Box
+        border={1}
+        borderColor="grey.400"
+        borderRadius={4}
+        padding={1}
+        margin={1}
+        style={{ textAlign: 'left' }}
+      >
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={visibleLines['potency_0_corrected']}
+              onChange={() => handleVisibilityChange('potency_0_corrected')}
+              style={{ color: 'black' }}
+            />
+          }
+          label="0% Potency (No Injection)"
+        />
+        <Box style={{ display: 'flex', alignItems: 'center' }}>
+          <svg width="20" height="10" style={{ marginRight: '5px' }}>
+            <line x1="0" y1="5" x2="20" y2="5" stroke="black" strokeWidth="2" />
+          </svg>
+          <Typography variant="body2">
+            100%, 0 oz/day (0.0000 gph)
+          </Typography>
+        </Box>
+      </Box>
     </FormGroup>
   );
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
+      const days = Math.floor(label);
+      const hours = Math.round((label % 1) * 24);
+      const timeLabel = `${days > 0 ? `${days} day${days > 1 ? 's' : ''}` : ''} ${hours > 0 ? `${hours} hours` : ''}`.trim();
+
       return (
         <div style={{ backgroundColor: 'white', padding: '10px', border: '1px solid #ccc' }}>
-          <p style={{ margin: 0 }}><strong>Day {label}</strong></p>
+          <p style={{ margin: 0 }}><strong>{timeLabel}</strong></p>
           {payload.map((entry, index) => (
             <p key={index} style={{ margin: 0, color: entry.color }}>
               {entry.name}: {entry.value.toFixed(2)}%
@@ -136,9 +179,12 @@ const EDIEChamberPotencyGraph = () => {
     <div style={{ fontSize: '12px', marginTop: '20px', textAlign: 'left', padding: '0 20px' }}>
       <h3 style={{ fontSize: '14px', fontWeight: 'bold' }}>Notes:</h3>
       <ol>
+		<li>100% potency assumes a full chamber of active Product. 0% potency assumes full chamber of inert liquid.</li>
+		<li>Chamber will never reach 100% due to logarithimic nature of displacement and the introduction of acid into the chamber.</li>
         <li>Once potency reaches desired value from 0%, injection changes to standard rate.</li>
         <li>This assumes a perfect world scenario in which the chamber is potent exactly 100% at day 0 and 0% at day 7.</li>
-        <li>The formula used for calculating potency changes combines exponential decay and volume displacement:
+		<li>The GPH values are average values you should see on Product Pump, assuming it operates 16 hours per day.</li>
+        <li>The formula used for calculating potency changes combines daily compounded degradation and volume displacement:
           <ul>
             <li>Volume displacement: P_new = P_old * (1 - V_in/V_total) + (V_in * 100%) / V_total</li>
             <li>These are combined and applied for each day.</li>
@@ -147,6 +193,15 @@ const EDIEChamberPotencyGraph = () => {
       </ol>
     </div>
   );
+
+  const getXTicks = (days) => {
+    const tickInterval = Math.ceil(days / 10);
+    const ticks = [];
+    for (let i = 0; i <= days; i += tickInterval) {
+      ticks.push(i);
+    }
+    return ticks;
+  };
 
   return (
     <div style={{ width: '100%', height: 800, fontFamily: 'Arial, sans-serif' }}>
@@ -164,27 +219,14 @@ const EDIEChamberPotencyGraph = () => {
             { value: 60, label: '60 days' }
           ]}
         />
-        <Slider
-          value={potencyRange}
-          onChange={handlePotencyRangeChange}
-          aria-labelledby="potency-range-slider"
-          min={0}
-          max={100}
-          valueLabelDisplay="auto"
-          marks={[
-            { value: 0, label: '0%' },
-            { value: 100, label: '100%' },
-            { value: 20, label: '20 ppm' }
-          ]}
-        />
       </div>
       <ResponsiveContainer width="100%" height="60%">
         <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
-            dataKey="day" 
+            dataKey="time" 
             label={{ value: 'Days', position: 'insideBottomRight', offset: -10 }}
-            ticks={[0, 2, 4, 6, 8, 10, 12, 14]}
+            ticks={getXTicks(days)}
           />
           <YAxis
             label={{ value: 'Potency (%)', angle: -90, position: 'insideLeft', offset: 15 }}
