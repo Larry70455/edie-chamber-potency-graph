@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Slider, Checkbox, FormControlLabel, FormGroup } from '@mui/material';
 
 const EDIEChamberPotencyGraph = () => {
   const V_chamber = 8.0;
   const half_life_new = 5 / Math.log(2);
   const decay_factor_new = Math.pow(0.5, 1 / half_life_new);
-  const days_14 = 14;
 
   const daily_volumes = {
     '95_14': 5.0,
@@ -31,13 +31,13 @@ const EDIEChamberPotencyGraph = () => {
     return potency_values;
   };
 
-  const generateData = () => {
+  const generateData = (days) => {
     const data = [];
-    for (let day = 0; day <= days_14; day++) {
+    for (let day = 0; day <= days; day++) {
       const dataPoint = { day };
       Object.entries(daily_volumes).forEach(([key, volume]) => {
-        dataPoint[`potency_${key}_100`] = simulatePotency(volume, days_14)[day];
-        dataPoint[`potency_${key}_0`] = simulatePotency(volume, days_14, 0)[day];
+        dataPoint[`potency_${key}_100`] = simulatePotency(volume, days)[day];
+        dataPoint[`potency_${key}_0`] = simulatePotency(volume, days, 0)[day];
       });
       dataPoint['potency_0_corrected'] = day <= 7 ? 100 - (100 / 7) * day : 0;
       data.push(dataPoint);
@@ -45,39 +45,75 @@ const EDIEChamberPotencyGraph = () => {
     return data;
   };
 
-  const data = generateData();
+  const [days, setDays] = useState(14);
+  const [visibleLines, setVisibleLines] = useState({
+    'potency_95_14_100': true,
+    'potency_95_14_0': true,
+    'potency_75_14_100': true,
+    'potency_75_14_0': true,
+    'potency_50_14_100': true,
+    'potency_50_14_0': true,
+    'potency_25_14_100': true,
+    'potency_25_14_0': true,
+    'potency_0_1_100': true,
+    'potency_0_1_0': true,
+    'potency_0_corrected': true,
+  });
+  const [potencyRange, setPotencyRange] = useState([0, 100]);
+
+  const data = generateData(days);
 
   const colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#000000'];
 
+  const handleVisibilityChange = (lineKey) => {
+    setVisibleLines({ ...visibleLines, [lineKey]: !visibleLines[lineKey] });
+  };
+
+  const handleDaysChange = (event, newValue) => {
+    setDays(newValue);
+  };
+
+  const handlePotencyRangeChange = (event, newValue) => {
+    setPotencyRange(newValue);
+  };
+
   const CustomizedLegend = () => (
-    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', fontSize: '12px', marginTop: '20px' }}>
+    <FormGroup row style={{ justifyContent: 'center', marginTop: '20px' }}>
       {Object.entries(daily_volumes).map(([key, volume], index) => (
         <div key={key} style={{ margin: '0 10px 10px 10px', textAlign: 'left' }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>{key.split('_')[0]}% Potency:</div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <svg width="20" height="10" style={{ marginRight: '5px' }}>
-              <line x1="0" y1="5" x2="20" y2="5" stroke={colors[index]} strokeWidth="2" />
-            </svg>
-            <span>100%, {volume.toFixed(1)} oz/day ({ozPerDayToGph(volume)} gph)</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <svg width="20" height="10" style={{ marginRight: '5px' }}>
-              <line x1="0" y1="5" x2="20" y2="5" stroke={colors[index]} strokeWidth="2" strokeDasharray="5,5" />
-            </svg>
-            <span>0%, {(volume * 2).toFixed(1)} oz/day ({ozPerDayToGph(volume * 2)} gph)</span>
-          </div>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={visibleLines[`potency_${key}_100`]}
+                onChange={() => handleVisibilityChange(`potency_${key}_100`)}
+                style={{ color: colors[index] }}
+              />
+            }
+            label={`${key.split('_')[0]}% Potency (100%)`}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={visibleLines[`potency_${key}_0`]}
+                onChange={() => handleVisibilityChange(`potency_${key}_0`)}
+                style={{ color: colors[index], borderColor: colors[index] }}
+              />
+            }
+            label={`${key.split('_')[0]}% Potency (0%)`}
+          />
         </div>
       ))}
-      <div style={{ margin: '0 10px 10px 10px', textAlign: 'left' }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>0% Potency (No Injection):</div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <svg width="20" height="10" style={{ marginRight: '5px' }}>
-            <line x1="0" y1="5" x2="20" y2="5" stroke="black" strokeWidth="2" />
-          </svg>
-          <span>100%, 0 oz/day (0.0000 gph)</span>
-        </div>
-      </div>
-    </div>
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={visibleLines['potency_0_corrected']}
+            onChange={() => handleVisibilityChange('potency_0_corrected')}
+            style={{ color: 'black' }}
+          />
+        }
+        label="0% Potency (No Injection)"
+      />
+    </FormGroup>
   );
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -115,6 +151,33 @@ const EDIEChamberPotencyGraph = () => {
   return (
     <div style={{ width: '100%', height: 800, fontFamily: 'Arial, sans-serif' }}>
       <h2 style={{ textAlign: 'center', fontSize: '16px', fontWeight: 'bold' }}>EDIE Chamber Potency Change Per Day</h2>
+      <div style={{ width: '80%', margin: '0 auto' }}>
+        <Slider
+          value={days}
+          onChange={handleDaysChange}
+          aria-labelledby="days-slider"
+          min={14}
+          max={60}
+          valueLabelDisplay="auto"
+          marks={[
+            { value: 14, label: '14 days' },
+            { value: 60, label: '60 days' }
+          ]}
+        />
+        <Slider
+          value={potencyRange}
+          onChange={handlePotencyRangeChange}
+          aria-labelledby="potency-range-slider"
+          min={0}
+          max={100}
+          valueLabelDisplay="auto"
+          marks={[
+            { value: 0, label: '0%' },
+            { value: 100, label: '100%' },
+            { value: 20, label: '20 ppm' }
+          ]}
+        />
+      </div>
       <ResponsiveContainer width="100%" height="60%">
         <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -130,15 +193,21 @@ const EDIEChamberPotencyGraph = () => {
           />
           <Tooltip content={<CustomTooltip />} />
           {Object.keys(daily_volumes).map((key, index) => (
-            <React.Fragment key={key}>
+            visibleLines[`potency_${key}_100`] && (
               <Line
+                key={`potency_${key}_100`}
                 type="monotone"
                 dataKey={`potency_${key}_100`}
                 stroke={colors[index]}
                 name={`${key.split('_')[0]}% Potency (100%)`}
                 dot={false}
               />
+            )
+          ))}
+          {Object.keys(daily_volumes).map((key, index) => (
+            visibleLines[`potency_${key}_0`] && (
               <Line
+                key={`potency_${key}_0`}
                 type="monotone"
                 dataKey={`potency_${key}_0`}
                 stroke={colors[index]}
@@ -146,15 +215,17 @@ const EDIEChamberPotencyGraph = () => {
                 name={`${key.split('_')[0]}% Potency (0%)`}
                 dot={false}
               />
-            </React.Fragment>
+            )
           ))}
-          <Line
-            type="monotone"
-            dataKey="potency_0_corrected"
-            stroke="black"
-            name="0% Potency (No Injection)"
-            dot={false}
-          />
+          {visibleLines['potency_0_corrected'] && (
+            <Line
+              type="monotone"
+              dataKey="potency_0_corrected"
+              stroke="black"
+              name="0% Potency (No Injection)"
+              dot={false}
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
       <CustomizedLegend />
