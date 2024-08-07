@@ -58,13 +58,13 @@ const EDIEChamberPotencyGraph = () => {
             <svg width="20" height="10" style={{ marginRight: '5px' }}>
               <line x1="0" y1="5" x2="20" y2="5" stroke={colors[index]} strokeWidth="2" />
             </svg>
-            <span>100%, {volume.toFixed(2)} oz/day ({ozPerDayToGph(volume)} gph)</span>
+            <span>100%, {volume.toFixed(1)} oz/day ({ozPerDayToGph(volume)} gph)</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <svg width="20" height="10" style={{ marginRight: '5px' }}>
               <line x1="0" y1="5" x2="20" y2="5" stroke={colors[index]} strokeWidth="2" strokeDasharray="5,5" />
             </svg>
-            <span>0%, {(volume * 2).toFixed(2)} oz/day ({ozPerDayToGph(volume * 2)} gph)</span>
+            <span>0%, {(volume * 2).toFixed(1)} oz/day ({ozPerDayToGph(volume * 2)} gph)</span>
           </div>
         </div>
       ))}
@@ -74,7 +74,7 @@ const EDIEChamberPotencyGraph = () => {
           <svg width="20" height="10" style={{ marginRight: '5px' }}>
             <line x1="0" y1="5" x2="20" y2="5" stroke="black" strokeWidth="2" />
           </svg>
-          <span>100%, 0.00 oz/day (0.0000 gph)</span>
+          <span>100%, 0 oz/day (0.0000 gph)</span>
         </div>
       </div>
     </div>
