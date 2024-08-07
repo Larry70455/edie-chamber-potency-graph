@@ -69,21 +69,6 @@ const EDIEChamberPotencyGraph = () => {
         </div>
       ))}
       <div style={{ margin: '0 10px 10px 10px', textAlign: 'left' }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>0% Potency:</div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <svg width="20" height="10" style={{ marginRight: '5px' }}>
-            <line x1="0" y1="5" x2="20" y2="5" stroke={colors[5]} strokeWidth="2" />
-          </svg>
-          <span>100%, 0.10 oz/day (0.00005 gph)</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <svg width="20" height="10" style={{ marginRight: '5px' }}>
-            <line x1="0" y1="5" x2="20" y2="5" stroke={colors[5]} strokeWidth="2" strokeDasharray="5,5" />
-          </svg>
-          <span>0%, 0.20 oz/day (0.0001 gph)</span>
-        </div>
-      </div>
-      <div style={{ margin: '0 10px 10px 10px', textAlign: 'left' }}>
         <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>0% Potency (No Injection):</div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <svg width="20" height="10" style={{ marginRight: '5px' }}>
@@ -120,7 +105,7 @@ const EDIEChamberPotencyGraph = () => {
         <li>The formula used for calculating potency changes combines exponential decay and volume displacement:
           <ul>
             <li>Volume displacement: P_new = P_old * (1 - V_in/V_total) + (V_in * 100%) / V_total</li>
-            <li>These are combined and applied iteratively for each day in the simulation.</li>
+            <li>These are combined and applied for each day.</li>
           </ul>
         </li>
       </ol>
